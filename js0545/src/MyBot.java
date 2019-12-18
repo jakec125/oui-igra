@@ -11,6 +11,8 @@ import java.util.*;
 public class MyBot implements Bot {
 
     InitialData data;
+    LinkedList<LinkedList<Saw>> mojeZagice;
+    int timerZagice;
 
     // Called only once before the match starts. It holds the
     // data that you may need before the game starts.
@@ -18,14 +20,9 @@ public class MyBot implements Bot {
     public void setup(InitialData data) {
         System.out.println((new Gson()).toJson(data));
         this.data = data;
-
-        // Print out the map
-//        for (int y = data.mapHeight - 1; y >= 0; y--) {
-//            for (int x = 0; x < data.mapWidth; x++) {
-//                System.out.print((data.map[y][x]) ? "_" : "#");
-//            }
-//            System.out.println();
-//        }
+        this.mojeZagice = new LinkedList<>();
+        this.timerZagice = 0;
+        inicializacijaMojihZagic();
     }
 
     // Called repeatedly while the match is generating. Each
@@ -35,10 +32,13 @@ public class MyBot implements Bot {
     public void update(MatchState state, Response response) {
         // Find and send your unit to a random direction that
         // moves it to a valid field on the map
-        // TODO: Remove this code and implement a proper path finding!
+        // TODO: Remove this code and implement proper path finding!
+        posodobiMojeZagice();
+
+
         Unit jaz = state.yourUnit;
         Unit nasprotnik = state.opponentUnit;
-        Coin kovanci[] = state.coins;
+        Coin[] kovanci = state.coins;
 
         int mojaRazdalja1 = razdalja(jaz.x, jaz.y, kovanci[0].x, kovanci[0].y);
         int nasprotnikRazdalja1 = razdalja(nasprotnik.x, nasprotnik.y, kovanci[0].x, kovanci[0].y);
@@ -245,22 +245,6 @@ public class MyBot implements Bot {
     }
 
     private void obdelajSoseda(int xCilj, int yCilj, PriorityQueue<Polje> vrsta, Polje[][] obiskano, Polje trenutno, int trenutnaSkupnaDolzina, Polje sosed, MatchState stanje) {
-//        if (trenutnaSkupnaDolzina < sosed.gScore) {
-//            if (obiskano[sosed.y][sosed.x] != null) {
-//                vrsta.remove(sosed);
-//                sosed.predhodnik = trenutno;
-//                sosed.gScore = trenutnaSkupnaDolzina;
-//                sosed.fScore = sosed.gScore + hevristika(sosed, xCilj, yCilj, stanje);
-//                vrsta.add(sosed);
-//            }
-//            else {
-//                sosed.predhodnik = trenutno;
-//                sosed.gScore = trenutnaSkupnaDolzina;
-//                sosed.fScore = sosed.gScore + hevristika(sosed, xCilj, yCilj, stanje);
-//                obiskano[sosed.y][sosed.x] = sosed;
-//                vrsta.add(sosed);
-//            }
-//        }
         if (obiskano[sosed.y][sosed.x] != null) {
             if (sosed.gScore > trenutno.gScore) {
                 return;
@@ -310,6 +294,134 @@ public class MyBot implements Bot {
         }
         else {
             return data.map[y][x];
+        }
+    }
+
+    private void inicializacijaMojihZagic() {
+        mojeZagice.addFirst(new LinkedList<>());
+        mojeZagice.getLast().add(new Saw(5, 0, SawDirection.UP_RIGHT));
+        mojeZagice.getLast().add(new Saw(14, 10, SawDirection.DOWN_LEFT));
+        for (int i = 0; i < 9; i++) {
+            LinkedList<Saw> prejsni = mojeZagice.getLast();
+            mojeZagice.addLast(new LinkedList<>());
+            LinkedList<Saw> novi = mojeZagice.getLast();
+            for (Saw zagica : prejsni) {
+                novi.add(new Saw(zagica.x, zagica.y, zagica.direction));
+            }
+            for (Saw saw : mojeZagice.getLast()) {
+                mojeZagiceNalednjaLokacija(saw);
+            }
+//            System.out.println(mojeZagice.getLast().getFirst().toString());
+        }
+        timerZagice += 10;
+    }
+
+    private void posodobiMojeZagice() {
+        mojeZagice.removeFirst();
+        LinkedList<Saw> prejsni = mojeZagice.getLast();
+        mojeZagice.addLast(new LinkedList<>());
+        LinkedList<Saw> novi = mojeZagice.getLast();
+        for (Saw zagica : prejsni) {
+            novi.add(new Saw(zagica.x, zagica.y, zagica.direction));
+        }
+        for (Saw saw : mojeZagice.getLast()) {
+            mojeZagiceNalednjaLokacija(saw);
+        }
+        if (timerZagice%22 == 0) {
+            mojeZagice.getLast().add(new Saw(5, 0, SawDirection.UP_RIGHT));
+            mojeZagice.getLast().add(new Saw(14, 10, SawDirection.DOWN_LEFT));
+        }
+        timerZagice++;
+    }
+
+    private void mojeZagiceNalednjaLokacija(Saw zaga) {
+        if (zaga.x-1 < 0 && zaga.y-1 < 0 && zaga.direction == SawDirection.DOWN_LEFT) {
+            zaga.y = zaga.y + 1;
+            zaga.x = zaga.x + 1;
+            zaga.direction = SawDirection.UP_RIGHT;
+        }
+        else if (zaga.x-1 < 0 && zaga.y+1 > data.mapHeight-1 && zaga.direction == SawDirection.UP_LEFT) {
+            zaga.y = zaga.y - 1;
+            zaga.x = zaga.x + 1;
+            zaga.direction = SawDirection.DOWN_RIGHT;
+        }
+        else if (zaga.x+1 > data.mapWidth-1 && zaga.y+1 > data.mapHeight-1 && zaga.direction == SawDirection.UP_RIGHT) {
+            zaga.y = zaga.y - 1;
+            zaga.x = zaga.x - 1;
+            zaga.direction = SawDirection.DOWN_LEFT;
+        }
+        else if (zaga.x+1 > data.mapWidth-1 && zaga.y-1 < 0 && zaga.direction == SawDirection.DOWN_RIGHT) {
+            zaga.y = zaga.y + 1;
+            zaga.x = zaga.x - 1;
+            zaga.direction = SawDirection.UP_LEFT;
+        }
+        else if (zaga.x-1 < 0 && (zaga.direction == SawDirection.DOWN_LEFT || zaga.direction == SawDirection.UP_LEFT)) {
+            if (zaga.direction == SawDirection.DOWN_LEFT) {
+                zaga.y = zaga.y - 1;
+                zaga.x = zaga.x + 1;
+                zaga.direction = SawDirection.DOWN_RIGHT;
+            }
+            else {
+                zaga.y = zaga.y + 1;
+                zaga.x = zaga.x + 1;
+                zaga.direction = SawDirection.UP_RIGHT;
+            }
+        }
+        else if (zaga.x+1 > data.mapWidth-1 && (zaga.direction == SawDirection.DOWN_RIGHT || zaga.direction == SawDirection.UP_RIGHT)) {
+            if (zaga.direction == SawDirection.DOWN_RIGHT) {
+                zaga.y = zaga.y - 1;
+                zaga.x = zaga.x - 1;
+                zaga.direction = SawDirection.DOWN_LEFT;
+            }
+            else {
+                zaga.y = zaga.y + 1;
+                zaga.x = zaga.x - 1;
+                zaga.direction = SawDirection.UP_LEFT;
+            }
+        }
+        else if (zaga.y-1 < 0 && (zaga.direction == SawDirection.DOWN_RIGHT || zaga.direction == SawDirection.DOWN_LEFT)) {
+            if (zaga.direction == SawDirection.DOWN_RIGHT) {
+                zaga.y = zaga.y + 1;
+                zaga.x = zaga.x + 1;
+                zaga.direction = SawDirection.UP_RIGHT;
+            }
+            else {
+                zaga.y = zaga.y + 1;
+                zaga.x = zaga.x - 1;
+                zaga.direction = SawDirection.UP_LEFT;
+            }
+        }
+        else if (zaga.y+1 > data.mapHeight-1 && (zaga.direction == SawDirection.UP_RIGHT || zaga.direction == SawDirection.UP_LEFT)) {
+            if (zaga.direction == SawDirection.UP_RIGHT) {
+                zaga.y = zaga.y - 1;
+                zaga.x = zaga.x + 1;
+                zaga.direction = SawDirection.DOWN_RIGHT;
+            }
+            else {
+                zaga.y = zaga.y - 1;
+                zaga.x = zaga.x - 1;
+                zaga.direction = SawDirection.DOWN_LEFT;
+            }
+        }
+        else {
+            if (zaga.direction == SawDirection.DOWN_LEFT) {
+                zaga.y = zaga.y - 1;
+                zaga.x = zaga.x - 1;
+//                System.out.println("dol levo grem");
+            }
+            else if (zaga.direction == SawDirection.DOWN_RIGHT) {
+                zaga.y = zaga.y - 1;
+                zaga.x = zaga.x + 1;
+            }
+            else if (zaga.direction == SawDirection.UP_LEFT) {
+                zaga.y = zaga.y + 1;
+                zaga.x = zaga.x - 1;
+            }
+            else {
+                zaga.y = zaga.y + 1;
+                zaga.x = zaga.x + 1;
+//                System.out.println("gor desno grem");
+            }
         }
     }
 
