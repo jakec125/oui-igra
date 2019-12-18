@@ -33,7 +33,8 @@ public class MyBot implements Bot {
         // Find and send your unit to a random direction that
         // moves it to a valid field on the map
         // TODO: Remove this code and implement proper path finding!
-        posodobiMojeZagice();
+//        System.out.println(Arrays.toString(mojeZagice.getFirst().toArray()));
+
 
 
         Unit jaz = state.yourUnit;
@@ -78,7 +79,7 @@ public class MyBot implements Bot {
 //        }
 
 
-
+        posodobiMojeZagice();
         response.moveUnit(premik);
     }
 
@@ -162,16 +163,14 @@ public class MyBot implements Bot {
         return null;
     }
 
-    private boolean dovoljenoGledeZag(MatchState stanje, int x, int y) {
+    private boolean dovoljenoGledeZag(int g, int x, int y) {
         boolean izhod = true;
-        for (Saw zaga : stanje.saws) {
-            if (true) {
-                int[] novaLokacija = zagaNaslednjaLokacija(zaga);
-                if (novaLokacija[0] == y && novaLokacija[1] == x) {
+        for (Saw zaga : mojeZagice.get(g)) {
+            //                int[] novaLokacija = zagaNaslednjaLokacija(zaga);
+            if (zaga.y == y && zaga.x == x) {
 //                    System.out.printf("sosed: (%d, %d) cilj: (%d, %d)\n", x, y, novaLokacija[1], novaLokacija[0]);
-                    izhod = false;
-                    break;
-                }
+                izhod = false;
+                break;
             }
         }
         return izhod;
@@ -260,9 +259,11 @@ public class MyBot implements Bot {
 
     public int hevristika(Polje polje, int xCilj, int yCilj, MatchState stanje) {
         int hevristika = razdalja(polje.x, polje.y, xCilj, yCilj);
-        if (!dovoljenoGledeZag(stanje, polje.x, polje.y) && polje.gScore == 1) {
-//            System.out.printf("Izogibam se (%d, %d)\n", polje.x, polje.y);
-            hevristika += 1000;
+        if (polje.gScore <= 9 && !dovoljenoGledeZag(polje.gScore, polje.x, polje.y)) {
+            if (polje.gScore == 1) {
+//                System.out.printf("Izogibam se (%d, %d)\n", polje.x, polje.y);
+            }
+            hevristika += (1000-hevristika);
         }
         return hevristika;
     }
@@ -301,6 +302,7 @@ public class MyBot implements Bot {
         mojeZagice.addFirst(new LinkedList<>());
         mojeZagice.getLast().add(new Saw(5, 0, SawDirection.UP_RIGHT));
         mojeZagice.getLast().add(new Saw(14, 10, SawDirection.DOWN_LEFT));
+        timerZagice++;
         for (int i = 0; i < 9; i++) {
             LinkedList<Saw> prejsni = mojeZagice.getLast();
             mojeZagice.addLast(new LinkedList<>());
@@ -312,8 +314,13 @@ public class MyBot implements Bot {
                 mojeZagiceNalednjaLokacija(saw);
             }
 //            System.out.println(mojeZagice.getLast().getFirst().toString());
+            if (timerZagice%22 == 0) {
+                mojeZagice.getLast().add(new Saw(5, 0, SawDirection.UP_RIGHT));
+                mojeZagice.getLast().add(new Saw(14, 10, SawDirection.DOWN_LEFT));
+            }
+            timerZagice++;
         }
-        timerZagice += 10;
+//        timerZagice += 20;
     }
 
     private void posodobiMojeZagice() {
@@ -339,21 +346,29 @@ public class MyBot implements Bot {
             zaga.y = zaga.y + 1;
             zaga.x = zaga.x + 1;
             zaga.direction = SawDirection.UP_RIGHT;
+//            System.out.println("spodnji levi kot");
+//            System.out.printf("(%d, %d)\n", zaga.x, zaga.y);
         }
         else if (zaga.x-1 < 0 && zaga.y+1 > data.mapHeight-1 && zaga.direction == SawDirection.UP_LEFT) {
             zaga.y = zaga.y - 1;
             zaga.x = zaga.x + 1;
             zaga.direction = SawDirection.DOWN_RIGHT;
+//            System.out.println("zgornji levi kot");
+//            System.out.printf("(%d, %d)\n", zaga.x, zaga.y);
         }
         else if (zaga.x+1 > data.mapWidth-1 && zaga.y+1 > data.mapHeight-1 && zaga.direction == SawDirection.UP_RIGHT) {
             zaga.y = zaga.y - 1;
             zaga.x = zaga.x - 1;
             zaga.direction = SawDirection.DOWN_LEFT;
+//            System.out.println("zgornji desni kot");
+//            System.out.printf("(%d, %d)\n", zaga.x, zaga.y);
         }
         else if (zaga.x+1 > data.mapWidth-1 && zaga.y-1 < 0 && zaga.direction == SawDirection.DOWN_RIGHT) {
             zaga.y = zaga.y + 1;
             zaga.x = zaga.x - 1;
             zaga.direction = SawDirection.UP_LEFT;
+//            System.out.println("spodnji desni kot");
+//            System.out.printf("(%d, %d)\n", zaga.x, zaga.y);
         }
         else if (zaga.x-1 < 0 && (zaga.direction == SawDirection.DOWN_LEFT || zaga.direction == SawDirection.UP_LEFT)) {
             if (zaga.direction == SawDirection.DOWN_LEFT) {
