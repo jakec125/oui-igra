@@ -13,15 +13,18 @@ public class MyBot implements Bot {
     InitialData data;
     LinkedList<LinkedList<Saw>> mojeZagice;
     int timerZagice;
-
+    int timeoutTimer;
+    int prejsnjeTocke;
     // Called only once before the match starts. It holds the
     // data that you may need before the game starts.
     @Override
     public void setup(InitialData data) {
-        System.out.println((new Gson()).toJson(data));
+//        System.out.println((new Gson()).toJson(data));
         this.data = data;
         this.mojeZagice = new LinkedList<>();
         this.timerZagice = 0;
+        this.timeoutTimer = 0;
+        this.prejsnjeTocke = 0;
         inicializacijaMojihZagic();
     }
 
@@ -33,9 +36,17 @@ public class MyBot implements Bot {
         // Find and send your unit to a random direction that
         // moves it to a valid field on the map
         // TODO: Remove this code and implement proper path finding!
-//        System.out.println(Arrays.toString(mojeZagice.getFirst().toArray()));
+//        System.out.println(Arrays.toString(mojeZagice.get(0).toArray()));
 
-
+//        if (prejsnjeTocke == state.yourUnit.points) {
+//            timeoutTimer++;
+//            if (timeoutTimer == 50) {
+//                randomPremik(state, response);
+//                timeoutTimer = 0;
+//                return;
+//            }
+//        }
+//        prejsnjeTocke = state.yourUnit.points;
 
         Unit jaz = state.yourUnit;
         Unit nasprotnik = state.opponentUnit;
@@ -48,13 +59,6 @@ public class MyBot implements Bot {
         int nasprotnikRazdalja2 = razdalja(nasprotnik.x, nasprotnik.y, kovanci[1].x, kovanci[1].y);
 
         Direction premik;
-//        if (mojaRazdalja1 < mojaRazdalja2 && nasprotnikRazdalja1 > mojaRazdalja1) {
-//            premik = (Direction) aStar(jaz.x, jaz.y, kovanci[0].x, kovanci[0].y, state)[1];
-//        }
-//        else {
-//            premik = (Direction) aStar(jaz.x, jaz.y, kovanci[1].x, kovanci[1].y, state)[1];
-//        }
-
         if (mojaRazdalja1 <= mojaRazdalja2) {
             if (nasprotnikRazdalja1 >= mojaRazdalja1) {
                 premik = (Direction) aStar(jaz.x, jaz.y, kovanci[0].x, kovanci[0].y, state)[1];
@@ -71,13 +75,6 @@ public class MyBot implements Bot {
                 premik = (Direction) aStar(jaz.x, jaz.y, kovanci[0].x, kovanci[0].y, state)[1];
             }
         }
-//        if (mojaRazdalja1 < mojaRazdalja2) {
-//            premik = aStar(jaz.x, jaz.y, kovanci[0].x, kovanci[0].y, state);
-//        }
-//        else {
-//            premik = aStar(jaz.x, jaz.y, kovanci[1].x, kovanci[1].y, state);
-//        }
-
 
         posodobiMojeZagice();
         response.moveUnit(premik);
@@ -101,10 +98,7 @@ public class MyBot implements Bot {
                 continue;
             }
             if (trenutno.x == xCilj && trenutno.y == yCilj) {
-//                if (razdalja(xStart, yStart, xCilj, yCilj) == 0) {
-//                    System.out.printf("jaz: (%d, %d), cilj: (%d, %d)\n", xStart, yStart, xCilj, yCilj);
-//                    izpisiVrsto(vrsta);
-//                }
+//                System.out.println(trenutno.fScore);
                 int dolzina = trenutno.gScore;
                 Direction smer = smer(trenutno, xStart, yStart);
                 Object[] izhod = new Object[2];
@@ -259,11 +253,14 @@ public class MyBot implements Bot {
 
     public int hevristika(Polje polje, int xCilj, int yCilj, MatchState stanje) {
         int hevristika = razdalja(polje.x, polje.y, xCilj, yCilj);
-        if (polje.gScore <= 9 && !dovoljenoGledeZag(polje.gScore, polje.x, polje.y)) {
+        if (polje.gScore <= 999 && !dovoljenoGledeZag(polje.gScore, polje.x, polje.y)) {
             if (polje.gScore == 1) {
 //                System.out.printf("Izogibam se (%d, %d)\n", polje.x, polje.y);
             }
-            hevristika += (1000-hevristika);
+            hevristika += (10000 + polje.gScore*10);
+            if (polje.gScore == 1) {
+                hevristika += 5000;
+            }
         }
         return hevristika;
     }
@@ -303,7 +300,7 @@ public class MyBot implements Bot {
         mojeZagice.getLast().add(new Saw(5, 0, SawDirection.UP_RIGHT));
         mojeZagice.getLast().add(new Saw(14, 10, SawDirection.DOWN_LEFT));
         timerZagice++;
-        for (int i = 0; i < 9; i++) {
+        for (int i = 0; i < 999; i++) {
             LinkedList<Saw> prejsni = mojeZagice.getLast();
             mojeZagice.addLast(new LinkedList<>());
             LinkedList<Saw> novi = mojeZagice.getLast();
@@ -450,6 +447,34 @@ public class MyBot implements Bot {
             System.out.printf("(%d, %d)|", ((Polje)polje).x, ((Polje)polje).y);
         }
         System.out.println();
+    }
+
+    private void randomPremik(MatchState state, Response response) {
+        while (true) {
+            double rand = Math.random();
+
+            Direction direction;
+            if (rand < 0.25) direction = Direction.LEFT;
+            else if (rand < 0.5) direction = Direction.RIGHT;
+            else if (rand < 0.75) direction = Direction.UP;
+            else direction = Direction.DOWN;
+
+            int newX, newY;
+
+            if (direction == Direction.LEFT) newX = state.yourUnit.x - 1;
+            else if (direction == Direction.RIGHT) newX = state.yourUnit.x + 1;
+            else newX = state.yourUnit.x;
+
+            if (direction == Direction.UP) newY = state.yourUnit.y + 1;
+            else if (direction == Direction.DOWN) newY = state.yourUnit.y - 1;
+            else newY = state.yourUnit.y;
+
+            if (newX >= 0 && newY >= 0 && newX < data.mapWidth && newY < data.mapHeight && data.map[newY][newX] && dovoljenoGledeZag(1, newX, newY)) {
+                posodobiMojeZagice();
+                response.moveUnit(direction);
+                break;
+            }
+        }
     }
 
     // Connects your bot to match generator, don't change it.
