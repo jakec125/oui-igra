@@ -38,7 +38,7 @@ public class MyBot implements Bot {
 //        if (prejsnjeTocke == state.yourUnit.points) {
 //            timeoutTimer++;
 //            if (timeoutTimer == 50) {
-//                randomPremik(state, response);
+//                randomPremik(state);
 //                timeoutTimer = 0;
 //                return;
 //            }
@@ -180,7 +180,7 @@ public class MyBot implements Bot {
 
     public int hevristika(Polje polje, int xCilj, int yCilj, MatchState stanje) {
         int hevristika = razdalja(polje.x, polje.y, xCilj, yCilj);
-        if (polje.gScore <= 999 && !dovoljenoGledeZag(polje.gScore, polje.x, polje.y)) {
+        if (polje.gScore <= 99 && !dovoljenoGledeZag(polje.gScore, polje.x, polje.y)) {
             if (polje.gScore == 1) {
 //                System.out.printf("Izogibam se (%d, %d)\n", polje.x, polje.y);
             }
@@ -229,7 +229,7 @@ public class MyBot implements Bot {
         mojeZagice.getLast().add(new Saw(5, 0, SawDirection.UP_RIGHT));
         mojeZagice.getLast().add(new Saw(14, 10, SawDirection.DOWN_LEFT));
         timerZagice++;
-        for (int i = 0; i < 999; i++) {
+        for (int i = 0; i < 99; i++) {
             LinkedList<Saw> prejsni = mojeZagice.getLast();
             mojeZagice.addLast(new LinkedList<>());
             LinkedList<Saw> novi = mojeZagice.getLast();
