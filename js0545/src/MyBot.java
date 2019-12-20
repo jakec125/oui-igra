@@ -33,9 +33,6 @@ public class MyBot implements Bot {
     // response object to issue your commands.
     @Override
     public void update(MatchState state, Response response) {
-        // Find and send your unit to a random direction that
-        // moves it to a valid field on the map
-        // TODO: Remove this code and implement proper path finding!
 //        System.out.println(Arrays.toString(mojeZagice.get(0).toArray()));
 
 //        if (prejsnjeTocke == state.yourUnit.points) {
