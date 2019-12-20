@@ -58,44 +58,50 @@ public class MyBot implements Bot {
         Direction premik;
         if (mojaRazdalja1 <= mojaRazdalja2) {
             if (nasprotnikRazdalja1 >= mojaRazdalja1) {
-                premik = (Direction) aStar(jaz.x, jaz.y, kovanci[0].x, kovanci[0].y, state)[1];
+                premik = (Direction) aStar(jaz.x, jaz.y, kovanci[0].x, kovanci[0].y, state, response)[1];
             }
             else {
-                premik = (Direction) aStar(jaz.x, jaz.y, kovanci[1].x, kovanci[1].y, state)[1];
+                premik = (Direction) aStar(jaz.x, jaz.y, kovanci[1].x, kovanci[1].y, state, response)[1];
             }
         }
         else {
             if (nasprotnikRazdalja2 >= mojaRazdalja2) {
-                premik = (Direction) aStar(jaz.x, jaz.y, kovanci[1].x, kovanci[1].y, state)[1];
+                premik = (Direction) aStar(jaz.x, jaz.y, kovanci[1].x, kovanci[1].y, state, response)[1];
             }
             else {
-                premik = (Direction) aStar(jaz.x, jaz.y, kovanci[0].x, kovanci[0].y, state)[1];
+                premik = (Direction) aStar(jaz.x, jaz.y, kovanci[0].x, kovanci[0].y, state, response)[1];
             }
         }
-
         posodobiMojeZagice();
         response.moveUnit(premik);
     }
 
-    private Object[] aStar(int xStart, int yStart, int xCilj, int yCilj, MatchState stanje) {
+    private Object[] aStar(int xStart, int yStart, int xCilj, int yCilj, MatchState stanje, Response response) {
+        int stevec = 0;
 
         PriorityQueue<Polje> vrsta = new PriorityQueue<Polje>(new PoljeComparator());
-        Polje prvo = new Polje(xStart, yStart, null, 0, 0);
+        Polje prvo = new Polje(xStart, yStart, 0, 0);
         prvo.fScore = hevristika(prvo, xCilj, yCilj, stanje);
         vrsta.add(prvo);
-        Polje[][] obiskano = new Polje[data.mapHeight][data.mapWidth];
-        Polje[][] zaprto = new Polje[data.mapHeight][data.mapWidth];
-        obiskano[yStart][xStart] = prvo;
+        Polje[][] open = new Polje[data.mapHeight][data.mapWidth];
+        open[yStart][xStart] = prvo;
         while (!vrsta.isEmpty()) {
-
+//            stevec++;
+//            if (stevec == 700) {
+//                System.out.println("random shit");
+//                Object[] izhod = new Object[2];
+//                izhod[0] = 69;
+//                izhod[1] = randomPremik(stanje);
+//                return izhod;
+//            }
+//            System.out.println(stevec);
             Polje trenutno = vrsta.poll();
-            obiskano[trenutno.y][trenutno.x] = null;
-            zaprto[trenutno.y][trenutno.x] = trenutno;
+            open[trenutno.y][trenutno.x] = null;
             if (!dovoljenPremik(trenutno.x, trenutno.y)) {
                 continue;
             }
             if (trenutno.x == xCilj && trenutno.y == yCilj) {
-//                System.out.println(trenutno.fScore);
+//                System.out.println(trenutno.gScore);
                 int dolzina = trenutno.gScore;
                 Direction smer = smer(trenutno, xStart, yStart);
                 Object[] izhod = new Object[2];
@@ -107,47 +113,39 @@ public class MyBot implements Bot {
             Polje sosed;
             int trenutnaSkupnaDolzina = trenutno.gScore + 1;
             if (trenutno.x+1 < data.mapWidth) {
-                if (zaprto[trenutno.y][trenutno.x + 1] == null) {
-                    if (obiskano[trenutno.y][trenutno.x + 1] != null) {
-                        sosed = obiskano[trenutno.y][trenutno.x + 1];
-                    } else {
-                        sosed = new Polje(trenutno.x + 1, trenutno.y, trenutno, Integer.MAX_VALUE, Integer.MAX_VALUE);
-                    }
-                    obdelajSoseda(xCilj, yCilj, vrsta, obiskano, trenutno, trenutnaSkupnaDolzina, sosed, stanje);
+                if (open[trenutno.y][trenutno.x + 1] != null) {
+                    sosed = open[trenutno.y][trenutno.x + 1];
+                } else {
+                    sosed = new Polje(trenutno.x + 1, trenutno.y, Integer.MAX_VALUE, Integer.MAX_VALUE);
                 }
+                obdelajSoseda(xCilj, yCilj, vrsta, open, trenutno, trenutnaSkupnaDolzina, sosed, stanje);
             }
 
             if (trenutno.x-1 >= 0) {
-                if (zaprto[trenutno.y][trenutno.x - 1] == null) {
-                    if (obiskano[trenutno.y][trenutno.x - 1] != null) {
-                        sosed = obiskano[trenutno.y][trenutno.x - 1];
-                    } else {
-                        sosed = new Polje(trenutno.x - 1, trenutno.y, trenutno, Integer.MAX_VALUE, Integer.MAX_VALUE);
-                    }
-                    obdelajSoseda(xCilj, yCilj, vrsta, obiskano, trenutno, trenutnaSkupnaDolzina, sosed, stanje);
+                if (open[trenutno.y][trenutno.x - 1] != null) {
+                    sosed = open[trenutno.y][trenutno.x - 1];
+                } else {
+                    sosed = new Polje(trenutno.x - 1, trenutno.y, Integer.MAX_VALUE, Integer.MAX_VALUE);
                 }
+                obdelajSoseda(xCilj, yCilj, vrsta, open, trenutno, trenutnaSkupnaDolzina, sosed, stanje);
             }
 
             if (trenutno.y+1 < data.mapHeight) {
-                if (zaprto[trenutno.y + 1][trenutno.x] == null) {
-                    if (obiskano[trenutno.y + 1][trenutno.x] != null) {
-                        sosed = obiskano[trenutno.y + 1][trenutno.x];
-                    } else {
-                        sosed = new Polje(trenutno.x, trenutno.y + 1, trenutno, Integer.MAX_VALUE, Integer.MAX_VALUE);
-                    }
-                    obdelajSoseda(xCilj, yCilj, vrsta, obiskano, trenutno, trenutnaSkupnaDolzina, sosed, stanje);
+                if (open[trenutno.y + 1][trenutno.x] != null) {
+                    sosed = open[trenutno.y + 1][trenutno.x];
+                } else {
+                    sosed = new Polje(trenutno.x, trenutno.y + 1, Integer.MAX_VALUE, Integer.MAX_VALUE);
                 }
+                obdelajSoseda(xCilj, yCilj, vrsta, open, trenutno, trenutnaSkupnaDolzina, sosed, stanje);
             }
 
             if (trenutno.y-1 >= 0) {
-                if (zaprto[trenutno.y - 1][trenutno.x] == null) {
-                    if (obiskano[trenutno.y - 1][trenutno.x] != null) {
-                        sosed = obiskano[trenutno.y - 1][trenutno.x];
-                    } else {
-                        sosed = new Polje(trenutno.x, trenutno.y - 1, trenutno, Integer.MAX_VALUE, Integer.MAX_VALUE);
-                    }
-                    obdelajSoseda(xCilj, yCilj, vrsta, obiskano, trenutno, trenutnaSkupnaDolzina, sosed, stanje);
+                if (open[trenutno.y - 1][trenutno.x] != null) {
+                    sosed = open[trenutno.y - 1][trenutno.x];
+                } else {
+                    sosed = new Polje(trenutno.x, trenutno.y - 1, Integer.MAX_VALUE, Integer.MAX_VALUE);
                 }
+                obdelajSoseda(xCilj, yCilj, vrsta, open, trenutno, trenutnaSkupnaDolzina, sosed, stanje);
             }
         }
 
@@ -171,79 +169,11 @@ public class MyBot implements Bot {
         return Math.abs((x1-x2)) + Math.abs((y1-y2));
     }
 
-    private int[] zagaNaslednjaLokacija(Saw zaga) {
-        int[] novaLokacija = new int[2];
-        if (zaga.x-1 < 0 && (zaga.direction == SawDirection.DOWN_LEFT || zaga.direction == SawDirection.UP_LEFT)) {
-            if (zaga.direction == SawDirection.DOWN_LEFT) {
-                novaLokacija[0] = zaga.y - 1;
-                novaLokacija[1] = zaga.x + 1;
-            }
-            else {
-                novaLokacija[0] = zaga.y + 1;
-                novaLokacija[1] = zaga.x + 1;
-            }
-        }
-        else if (zaga.x+1 > data.mapWidth-1 && (zaga.direction == SawDirection.DOWN_RIGHT || zaga.direction == SawDirection.UP_RIGHT)) {
-            if (zaga.direction == SawDirection.DOWN_RIGHT) {
-                novaLokacija[0] = zaga.y - 1;
-                novaLokacija[1] = zaga.x - 1;
-            }
-            else {
-                novaLokacija[0] = zaga.y + 1;
-                novaLokacija[1] = zaga.x - 1;
-            }
-        }
-        else if (zaga.y-1 < 0 && (zaga.direction == SawDirection.DOWN_RIGHT || zaga.direction == SawDirection.DOWN_LEFT)) {
-            if (zaga.direction == SawDirection.DOWN_RIGHT) {
-                novaLokacija[0] = zaga.y + 1;
-                novaLokacija[1] = zaga.x + 1;
-            }
-            else {
-                novaLokacija[0] = zaga.y + 1;
-                novaLokacija[1] = zaga.x - 1;
-            }
-        }
-        else if (zaga.y+1 > data.mapHeight-1 && (zaga.direction == SawDirection.UP_RIGHT || zaga.direction == SawDirection.UP_LEFT)) {
-            if (zaga.direction == SawDirection.UP_RIGHT) {
-                novaLokacija[0] = zaga.y - 1;
-                novaLokacija[1] = zaga.x + 1;
-            }
-            else {
-                novaLokacija[0] = zaga.y - 1;
-                novaLokacija[1] = zaga.x - 1;
-            }
-        }
-        else {
-            if (zaga.direction == SawDirection.DOWN_LEFT) {
-                novaLokacija[0] = zaga.y - 1;
-                novaLokacija[1] = zaga.x - 1;
-            }
-            else if (zaga.direction == SawDirection.DOWN_RIGHT) {
-                novaLokacija[0] = zaga.y - 1;
-                novaLokacija[1] = zaga.x + 1;
-            }
-            else if (zaga.direction == SawDirection.UP_LEFT) {
-                novaLokacija[0] = zaga.y + 1;
-                novaLokacija[1] = zaga.x - 1;
-            }
-            else {
-                novaLokacija[0] = zaga.y + 1;
-                novaLokacija[1] = zaga.x + 1;
-            }
-        }
-        return novaLokacija;
-    }
-
     private void obdelajSoseda(int xCilj, int yCilj, PriorityQueue<Polje> vrsta, Polje[][] obiskano, Polje trenutno, int trenutnaSkupnaDolzina, Polje sosed, MatchState stanje) {
-        if (obiskano[sosed.y][sosed.x] != null) {
-            if (sosed.gScore > trenutno.gScore) {
-                return;
-            }
-        }
         vrsta.remove(sosed);
-        sosed.predhodnik = trenutno;
         sosed.gScore = trenutnaSkupnaDolzina;
         sosed.fScore = sosed.gScore + hevristika(sosed, xCilj, yCilj, stanje);
+        sosed.predhodniki.put(sosed.gScore, trenutno);
         vrsta.add(sosed);
         obiskano[sosed.y][sosed.x] = sosed;
     }
@@ -254,20 +184,22 @@ public class MyBot implements Bot {
             if (polje.gScore == 1) {
 //                System.out.printf("Izogibam se (%d, %d)\n", polje.x, polje.y);
             }
-            hevristika += (10000 + polje.gScore*10);
-            if (polje.gScore == 1) {
-                hevristika += 5000;
-            }
+            hevristika += 10000;
+//            if (polje.gScore == 1) {
+//                hevristika += 5000;
+//            }
         }
         return hevristika;
     }
 
     public Direction smer(Polje trenutno, int xStart, int yStart) {
-        while (trenutno.predhodnik.x != xStart || trenutno.predhodnik.y != yStart) {
-            trenutno = trenutno.predhodnik;
+        int stevecG = trenutno.gScore;
+        while (stevecG != 1) {
+            trenutno = trenutno.predhodniki.get(stevecG);
+            stevecG--;
         }
         Polje naslednje = trenutno;
-        trenutno = trenutno.predhodnik;
+        trenutno = trenutno.predhodniki.get(1);
 
         if (trenutno.x < naslednje.x && trenutno.y == naslednje.y) {
             return Direction.RIGHT;
@@ -446,7 +378,7 @@ public class MyBot implements Bot {
         System.out.println();
     }
 
-    private void randomPremik(MatchState state, Response response) {
+    private Direction randomPremik(MatchState state) {
         while (true) {
             double rand = Math.random();
 
@@ -467,9 +399,8 @@ public class MyBot implements Bot {
             else newY = state.yourUnit.y;
 
             if (newX >= 0 && newY >= 0 && newX < data.mapWidth && newY < data.mapHeight && data.map[newY][newX] && dovoljenoGledeZag(1, newX, newY)) {
-                posodobiMojeZagice();
-                response.moveUnit(direction);
-                break;
+//                posodobiMojeZagice();
+                return direction;
             }
         }
     }
